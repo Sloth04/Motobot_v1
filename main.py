@@ -1,14 +1,14 @@
 import datetime
 import telebot
 import logging
-import re
+
 
 import create_database as db_creator
 from models.database import DATABASE_NAME
 from models.database import Session
 from models.data import Data
 from models.users import Users
-from sqlalchemy import and_
+from sqlalchemy.sql import func
 
 from settings import *
 
@@ -23,15 +23,28 @@ if __name__ == '__main__':
     if not db_is_created:
         db_creator.create_database()
 
+
 all_time = 'Отримати дані за весь час'
 last_day = 'За останній день'
 last_week = 'За останній тиждень'
 last_month = 'За останній місяць'
 last_year = 'За останній рік'
+error_message = 'Виникла помилка, спробуйте ще раз'
 
 
 def query_db(n: int):
-    pass
+    date = get_date_more_then_days(n)
+    result = session\
+        .query(func.sum(Data.data))\
+        .filter(Data.received <= date).all()
+    result = [item[0] for item in result]
+    str_result = str(datetime.timedelta(minutes=result[0]))
+    session.commit()
+    return str_result
+
+
+def get_date_more_then_days(days):
+    return datetime.datetime.today() - datetime.timedelta(days=days)
 
 
 @bot.message_handler(commands=['start'])
@@ -63,23 +76,7 @@ def stop_message(message):
 @bot.message_handler(content_types=['text'])
 def get_info(message):
     try:
-        if len(re.findall(r'[А-я]', message.text)) > 0:
-            if message.text == all_time:
-                bot.send_message(message.chat.id, 'Сума мотогодин за увесь час складає:')
-                # add here query for variable in if
-            if message.text == last_day:
-                bot.send_message(message.chat.id, 'Сума мотогодин за останній день складає:')
-                # add here query for variable in if
-            if message.text == last_week:
-                bot.send_message(message.chat.id, 'Сума мотогодин за останній тиждень складає:')
-                # add here query for variable in if
-            if message.text == last_month:
-                bot.send_message(message.chat.id, 'Сума мотогодин за останній місяць складає:')
-                # add here query for variable in if
-            if message.text == last_year:
-                bot.send_message(message.chat.id, 'Сума мотогодин за останній рік складає:')
-                # add here query for variable in if
-        elif len(re.findall(r'[А-я]', message.text)) == 0 and len(re.findall(r'[\d]', message.text)) > 0:
+        if message.text.isdigit():
             tg_id = message.from_user.id
             user_firstname = message.from_user.first_name
             user_lastname = message.from_user.last_name
@@ -93,8 +90,28 @@ def get_info(message):
             session.add(incoming_data)
             bot.send_message(message.from_user.id, 'Ваш запис додано!')
             session.commit()
-    except():
-        bot.send_message(message.chat.id, "Виникла помилка, спробуйте ще раз")
+        elif message.text == all_time:
+            result = session.query(func.sum(Data.data)).all()
+            result = [item[0] for item in result]
+            str_result = str(datetime.timedelta(minutes=result[0]))
+            session.commit()
+            bot.send_message(message.chat.id, f'Сума мотогодин за увесь час складає: {str_result}')
+        elif message.text == last_day:
+            result = str(query_db(1))
+            bot.send_message(message.chat.id, f'Сума мотогодин за останній день складає: {result}')
+        elif message.text == last_week:
+            result = str(query_db(7))
+            bot.send_message(message.chat.id, f'Сума мотогодин за останній тиждень складає: {result}')
+        elif message.text == last_month:
+            result = str(query_db(30))
+            bot.send_message(message.chat.id, f'Сума мотогодин за останній місяць складає: {result}')
+        elif message.text == last_year:
+            result = str(query_db(360))
+            bot.send_message(message.chat.id, f'Сума мотогодин за останній рік складає: {result}')
+        elif not message.text.isdigit():
+            bot.send_message(message.chat.id, error_message)
+    except ValueError:
+        bot.send_message(message.chat.id, error_message)
 
 
 bot.polling(none_stop=True)
