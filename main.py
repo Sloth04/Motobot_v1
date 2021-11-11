@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 bot = telebot.TeleBot(TOKEN)
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # You shoot use if __name__ == '__main__': in the end of file.
     db_is_created = os.path.exists(DATABASE_NAME)
     if not db_is_created:
         db_creator.create_database()
@@ -33,7 +33,7 @@ error_message = 'Виникла помилка, спробуйте ще раз'
 
 
 def query_db(n: int):
-    date = get_date_more_then_days(n)
+    date = get_date_more_then_days(n)  # you use function 1 time in file. function 1 line long. You not need to use it
     result = session\
         .query(func.sum(Data.data))\
         .filter(Data.received <= date).all()
@@ -108,10 +108,10 @@ def get_info(message):
         elif message.text == last_year:
             result = str(query_db(360))
             bot.send_message(message.chat.id, f'Сума мотогодин за останній рік складає: {result}')
-        elif not message.text.isdigit():
+        elif not message.text.isdigit():  # use else: statement
             bot.send_message(message.chat.id, error_message)
     except ValueError:
         bot.send_message(message.chat.id, error_message)
 
 
-bot.polling(none_stop=True)
+bot.polling(none_stop=True)  # this must be inside if __name__... or inside main() that call from if __name__...
