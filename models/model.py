@@ -1,16 +1,15 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-
+from sqlalchemy.orm import relationship
 from models.database import Base
 
 
 class Users(Base):
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True)
-    tg_user_id = Column(Integer)
-    # tg_user_id = Column(Integer, ForeignKey('data.tg_id'))
+    tg_user_id = Column(Integer, primary_key=True)
     user_nickname = Column(String)
     user_lastname = Column(String)
+    children = relationship('Data')
 
     def __init__(self, tg_user_id: int, user_nickname: str, user_lastname: str):
         self.tg_user_id = tg_user_id
@@ -21,3 +20,17 @@ class Users(Base):
         info: str = f'Пользователь [Идентификатор Tg: {self.tg_user_id},' \
                     f'Имя: {self.user_nickname}, Фамилия: {self.user_lastname}]'
         return info
+
+
+class Data(Base):
+    __tablename__ = 'data'
+
+    id = Column(Integer, primary_key=True)
+    tg_user = Column(Integer, ForeignKey('users.tg_user_id'))
+    data = Column(Integer)
+    received = Column(String)
+
+    def __init__(self, tg_id: int, data: int, received: str):
+        self.tg_id = tg_id
+        self.data = data
+        self.received = received

@@ -6,8 +6,7 @@ import logging
 import create_database as db_creator
 from models.database import DATABASE_NAME
 from models.database import Session
-from models.data import Data
-from models.users import Users
+from models.model import Data, Users
 from sqlalchemy.sql import func
 
 from settings import *
